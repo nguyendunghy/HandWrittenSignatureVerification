@@ -19,9 +19,12 @@ import java.util.logging.Logger;
  */
 public class ConnectionFunction {
 
-    private static Connection con;
+    private Connection con;
 
-    public static Connection getConnection() {
+    public ConnectionFunction() {
+    }
+
+    public Connection getConnection() {
         try {
             Class.forName("com.mysql.jdbc.Driver");
             con = DriverManager.getConnection("jdbc:mysql://localhost/handwritten_signature_verification?"
@@ -33,29 +36,27 @@ public class ConnectionFunction {
     }
 
     public static void main(String[] args) {
-        String sql = "SELECT *\n"
-                + "FROM threshold;";
-        ConnectionFunction.getConnection();
-        ArrayList<ThresholdDatatype> data = ConnectionFunction.getThresholdData(sql);
+        String sql = "SELECT * FROM enrollment WHERE identity_number = '111111'";
+        ConnectionFunction connect = new ConnectionFunction();
+        connect.getConnection();
+        ArrayList<ThresholdDatatype> data = connect.getThresholdData("111111");
         for (int i = 0; i < data.size(); i++) {
-            System.out.println(data.get(i).getIdentityNumber());
+            System.out.println(data.get(i).getId());
         }
-        ConnectionFunction.writeThresholdData(data.get(0));
-
     }
 
     /**
-     * @param sql Cậu lệnh sql lấy dữ liệu từ bảng Enrollment có identity number
-     * cho trước
+     * @param identity Số chứng minh thư nhân dân
      * @return Nếu identity number có trong cơ sở dữ liệu thì sẽ trả lại toàn bộ
      * vector dữ liệu Nếu identity number không tồn tại sẽ trả lại null
      */
-    public static ArrayList<EnrollDatatype> getEnrollData(String sql) {
+    public ArrayList<EnrollDatatype> getEnrollData(String identity) {
 
         ArrayList<EnrollDatatype> data = new ArrayList<EnrollDatatype>();
         PreparedStatement stm = null;
         ResultSet rs = null;
-
+        String sql = "SELECT * FROM handwritten_signature_verification.enrollment WHERE identity_number = '" + identity + "'";
+        //String sql = identity;
         try {
             stm = con.prepareStatement(sql);
             rs = stm.executeQuery();
@@ -93,10 +94,11 @@ public class ConnectionFunction {
      * @return Nếu identity number có trong cơ sở dữ liệu thì sẽ trả lại toàn bộ
      * vector dữ liệu Nếu identity number không tồn tại sẽ trả lại null
      */
-    public static ArrayList<ThresholdDatatype> getThresholdData(String sql) {
+    public ArrayList<ThresholdDatatype> getThresholdData(String identity) {
         ArrayList<ThresholdDatatype> data = new ArrayList<ThresholdDatatype>();
         PreparedStatement stm = null;
         ResultSet rs = null;
+        String sql = "SELECT * FROM threshold WHERE identity_number = '" + identity + "'";
         try {
             stm = con.prepareStatement(sql);
             rs = stm.executeQuery();
@@ -121,7 +123,7 @@ public class ConnectionFunction {
      * trong cơ sở dữ liệu
      * @return true nếu insert thành công,false nếu ngược lại
      */
-    public static boolean writeEnrollData(EnrollDatatype data) {
+    public boolean writeEnrollData(EnrollDatatype data) {
         PreparedStatement prepare = null;
         try {
             String sql = "INSERT INTO handwritten_signature_verification.enrollment VALUES(DEFAULT,?,?,?,?,?,?,?,?,?)";
@@ -142,7 +144,6 @@ public class ConnectionFunction {
             ex.printStackTrace();
             return false;
         }
-
         return true;
     }
 
@@ -152,7 +153,7 @@ public class ConnectionFunction {
      * trong cơ sở dữ liệu
      * @return true nếu insert thành công,false nếu ngược lại
      */
-    public static boolean writeThresholdData(ThresholdDatatype data) {
+    public boolean writeThresholdData(ThresholdDatatype data) {
         PreparedStatement prepare = null;
         try {
             String sql = "INSERT INTO handwritten_signature_verification.threshold VALUES(DEFAULT,?,?)";
@@ -168,156 +169,6 @@ public class ConnectionFunction {
         }
 
         return true;
-    }
-
-    private static class ThresholdDatatype {
-
-        private int id;
-        private String identityNumber;
-        private double threshold;
-
-        public ThresholdDatatype(int id, String identityNumber, double threshold) {
-            this.id = id;
-            this.identityNumber = identityNumber;
-            this.threshold = threshold;
-        }
-
-        public int getId() {
-            return id;
-        }
-
-        public void setId(int id) {
-            this.id = id;
-        }
-
-        public String getIdentityNumber() {
-            return identityNumber;
-        }
-
-        public void setIdentityNumber(String identityNumber) {
-            this.identityNumber = identityNumber;
-        }
-
-        public double getThreshold() {
-            return threshold;
-        }
-
-        public void setThreshold(double threshold) {
-            this.threshold = threshold;
-        }
-
-    }
-
-    /**
-     * @author Nguyễn Văn Dũng
-     * @see Cấu trúc dữ liệu để lưu và lấy ra trong bảng Enrollment
-     */
-    private static class EnrollDatatype {
-
-        private int id;
-        private String identityNumber;
-        private float baselineSlantAngle;
-        private float aspectRatio;
-        private float normalizedAre;
-        private int centerGravity_X;
-        private int centerGravity_Y;
-        private float jointedCenterAngle;
-        private int edgePoint;
-        private int crossPoint;
-
-        public EnrollDatatype(int id, String identityNumber, float baselineSlantAngle, float aspectRatio, float normalizedAre, int centerGravity_X, int centerGravity_Y, float jointedCenterAngle, int edgePoint, int crossPoint) {
-            this.id = id;
-            this.identityNumber = identityNumber;
-            this.baselineSlantAngle = baselineSlantAngle;
-            this.aspectRatio = aspectRatio;
-            this.normalizedAre = normalizedAre;
-            this.centerGravity_X = centerGravity_X;
-            this.centerGravity_Y = centerGravity_Y;
-            this.jointedCenterAngle = jointedCenterAngle;
-            this.edgePoint = edgePoint;
-            this.crossPoint = crossPoint;
-        }
-
-        public int getId() {
-            return id;
-        }
-
-        public void setId(int id) {
-            this.id = id;
-        }
-
-        public String getIdentityNumber() {
-            return identityNumber;
-        }
-
-        public void setIdentityNumber(String identityNumber) {
-            this.identityNumber = identityNumber;
-        }
-
-        public float getBaselineSlantAngle() {
-            return baselineSlantAngle;
-        }
-
-        public void setBaselineSlantAngle(float baselineSlantAngle) {
-            this.baselineSlantAngle = baselineSlantAngle;
-        }
-
-        public float getAspectRatio() {
-            return aspectRatio;
-        }
-
-        public void setAspectRatio(float aspectRatio) {
-            this.aspectRatio = aspectRatio;
-        }
-
-        public float getNormalizedAre() {
-            return normalizedAre;
-        }
-
-        public void setNormalizedAre(float normalizedAre) {
-            this.normalizedAre = normalizedAre;
-        }
-
-        public int getCenterGravity_X() {
-            return centerGravity_X;
-        }
-
-        public void setCenterGravity_X(int centerGravity_X) {
-            this.centerGravity_X = centerGravity_X;
-        }
-
-        public int getCenterGravity_Y() {
-            return centerGravity_Y;
-        }
-
-        public void setCenterGravity_Y(int centerGravity_Y) {
-            this.centerGravity_Y = centerGravity_Y;
-        }
-
-        public float getJointedCenterAngle() {
-            return jointedCenterAngle;
-        }
-
-        public void setJointedCenterAngle(float jointedCenterAngle) {
-            this.jointedCenterAngle = jointedCenterAngle;
-        }
-
-        public int getEdgePoint() {
-            return edgePoint;
-        }
-
-        public void setEdgePoint(int edgePoint) {
-            this.edgePoint = edgePoint;
-        }
-
-        public int getCrossPoint() {
-            return crossPoint;
-        }
-
-        public void setCrossPoint(int crossPoint) {
-            this.crossPoint = crossPoint;
-        }
-
     }
 
 }

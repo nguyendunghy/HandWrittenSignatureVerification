@@ -5,7 +5,11 @@
  */
 package handwrittensignatureverification;
 
+import database.ConnectionFunction;
+import database.EnrollDatatype;
+import database.ThresholdDatatype;
 import java.io.File;
+import java.io.IOException;
 import javax.swing.JFileChooser;
 
 /**
@@ -41,6 +45,9 @@ public class Enrollment extends javax.swing.JFrame {
         jButton1 = new javax.swing.JButton();
         jPanel3 = new javax.swing.JPanel();
         jButton2 = new javax.swing.JButton();
+        jPanel4 = new javax.swing.JPanel();
+        jLabel4 = new javax.swing.JLabel();
+        jTextField3 = new javax.swing.JTextField();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
         setResizable(false);
@@ -128,6 +135,11 @@ public class Enrollment extends javax.swing.JFrame {
 
         jButton2.setFont(new java.awt.Font("Times New Roman", 1, 18)); // NOI18N
         jButton2.setText("Enroll");
+        jButton2.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                jButton2MouseClicked(evt);
+            }
+        });
 
         javax.swing.GroupLayout jPanel3Layout = new javax.swing.GroupLayout(jPanel3);
         jPanel3.setLayout(jPanel3Layout);
@@ -146,13 +158,40 @@ public class Enrollment extends javax.swing.JFrame {
                 .addContainerGap(28, Short.MAX_VALUE))
         );
 
+        jLabel4.setFont(new java.awt.Font("Times New Roman", 1, 18)); // NOI18N
+        jLabel4.setText("    Threshold :");
+
+        jTextField3.setToolTipText("Identity Card Number");
+
+        javax.swing.GroupLayout jPanel4Layout = new javax.swing.GroupLayout(jPanel4);
+        jPanel4.setLayout(jPanel4Layout);
+        jPanel4Layout.setHorizontalGroup(
+            jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(jPanel4Layout.createSequentialGroup()
+                .addGap(35, 35, 35)
+                .addComponent(jLabel4)
+                .addGap(39, 39, 39)
+                .addComponent(jTextField3)
+                .addGap(121, 121, 121))
+        );
+        jPanel4Layout.setVerticalGroup(
+            jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(jPanel4Layout.createSequentialGroup()
+                .addContainerGap()
+                .addGroup(jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(jLabel4)
+                    .addComponent(jTextField3, javax.swing.GroupLayout.PREFERRED_SIZE, 28, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addContainerGap(33, Short.MAX_VALUE))
+        );
+
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
         layout.setHorizontalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addComponent(jPanel1, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
             .addComponent(jPanel2, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-            .addComponent(jPanel3, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+            .addComponent(jPanel3, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+            .addComponent(jPanel4, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -161,8 +200,10 @@ public class Enrollment extends javax.swing.JFrame {
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(jPanel2, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(jPanel4, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(jPanel3, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addGap(0, 20, Short.MAX_VALUE))
+                .addContainerGap())
         );
 
         pack();
@@ -170,12 +211,13 @@ public class Enrollment extends javax.swing.JFrame {
 
     private void jButton1MouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_jButton1MouseClicked
         String url1;
+        String defaultLink = "C:\\Users\\NguyenVanDung\\Desktop\\Base line slant angle\\Enrollment";
         JFileChooser choose = new JFileChooser();
-        //choose.setCurrentDirectory(new File(def));
+        choose.setCurrentDirectory(new File(defaultLink));
         int option = choose.showSaveDialog(this);
         if (option == JFileChooser.APPROVE_OPTION) {
             // File file = choose.getSelectedFile();
-            url1 = choose.getCurrentDirectory().getAbsolutePath() + "\\";
+            url1 = choose.getCurrentDirectory().getAbsolutePath();
             jTextField2.setText(url1);
         }
     }//GEN-LAST:event_jButton1MouseClicked
@@ -184,6 +226,39 @@ public class Enrollment extends javax.swing.JFrame {
         this.setVisible(false);
         new Interface().setVisible(true);
     }//GEN-LAST:event_jButton3MouseClicked
+
+    private void jButton2MouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_jButton2MouseClicked
+        String folderName = jTextField2.getText();
+        File folder = new File(folderName);
+        File[] files = folder.listFiles();
+        ConnectionFunction func = new ConnectionFunction();
+        func.getConnection();
+        String identity = jTextField1.getText();
+        for (int i = 0; i < files.length; i++) {
+            int[][] binImage = new Preprocessing(files[i].getAbsolutePath()).getBinaryImage();
+            double[] fetureVector = new FeatureExtraction().getFeatureVector(binImage);
+            EnrollDatatype ed = new EnrollDatatype(
+                    1, identity,
+                    (float) fetureVector[0], (float) fetureVector[1],
+                    (float) fetureVector[2], (int) fetureVector[3],
+                    (int) fetureVector[4], (float) fetureVector[5],
+                    (int) fetureVector[6], (int) fetureVector[7]
+            );
+
+            boolean re = func.writeEnrollData(ed);
+            if (re) {
+                System.out.println(files[i].getAbsolutePath());
+            }
+        }
+        //Lưu Threshold cho bo anh
+        String thres = jTextField3.getText();
+        ThresholdDatatype tt = new ThresholdDatatype(1, identity, Double.parseDouble(thres));
+        boolean re = func.writeThresholdData(tt);
+        if (re) {
+            System.out.println("Threshold : " + thres);
+        }
+
+    }//GEN-LAST:event_jButton2MouseClicked
 
     /**
      * @param args the command line arguments
@@ -227,10 +302,13 @@ public class Enrollment extends javax.swing.JFrame {
     private javax.swing.JLabel jLabel1;
     private javax.swing.JLabel jLabel2;
     private javax.swing.JLabel jLabel3;
+    private javax.swing.JLabel jLabel4;
     private javax.swing.JPanel jPanel1;
     private javax.swing.JPanel jPanel2;
     private javax.swing.JPanel jPanel3;
+    private javax.swing.JPanel jPanel4;
     private javax.swing.JTextField jTextField1;
     private javax.swing.JTextField jTextField2;
+    private javax.swing.JTextField jTextField3;
     // End of variables declaration//GEN-END:variables
 }

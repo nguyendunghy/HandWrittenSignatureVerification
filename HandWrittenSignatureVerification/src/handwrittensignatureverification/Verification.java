@@ -5,14 +5,21 @@
  */
 package handwrittensignatureverification;
 
+import database.ConnectionFunction;
+import database.EnrollDatatype;
+import database.ThresholdDatatype;
 import java.io.File;
+import java.util.ArrayList;
 import javax.swing.JFileChooser;
+import javax.swing.JOptionPane;
 
 /**
  *
  * @author NguyenVanDung
  */
 public class Verification extends javax.swing.JFrame {
+
+    String defaultlink = "C:\\Users\\NguyenVanDung\\Desktop\\Base line slant angle";
 
     /**
      * Creates new form Enrollment
@@ -128,6 +135,11 @@ public class Verification extends javax.swing.JFrame {
 
         jButton2.setFont(new java.awt.Font("Times New Roman", 1, 18)); // NOI18N
         jButton2.setText("Verify");
+        jButton2.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                jButton2MouseClicked(evt);
+            }
+        });
         jButton2.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 jButton2ActionPerformed(evt);
@@ -176,11 +188,13 @@ public class Verification extends javax.swing.JFrame {
     private void jButton1MouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_jButton1MouseClicked
         String url1;
         JFileChooser choose = new JFileChooser();
+        choose.setCurrentDirectory(new File(defaultlink));
         //choose.setCurrentDirectory(new File(def));
         int option = choose.showSaveDialog(this);
         if (option == JFileChooser.APPROVE_OPTION) {
             // File file = choose.getSelectedFile();
-            url1 = choose.getCurrentDirectory().getAbsolutePath() + "\\";
+            defaultlink = choose.getCurrentDirectory().getAbsolutePath();
+            url1 = choose.getSelectedFile().getAbsolutePath();
             jTextField2.setText(url1);
         }
     }//GEN-LAST:event_jButton1MouseClicked
@@ -193,6 +207,104 @@ public class Verification extends javax.swing.JFrame {
         this.setVisible(false);
         new Interface().setVisible(true);
     }//GEN-LAST:event_jButton3MouseClicked
+
+    private void jButton2MouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_jButton2MouseClicked
+        ConnectionFunction func = new ConnectionFunction();
+        func.getConnection();
+        String identity = jTextField1.getText();
+        String imageLink = jTextField2.getText();
+        ArrayList<EnrollDatatype> re = func.getEnrollData(identity);
+        ArrayList<ThresholdDatatype> thres = func.getThresholdData(identity);
+
+//        File folder = new File(imageLink);
+//        File[] files = folder.listFiles();
+//        for (int i = 0; i < files.length; i++) {
+//            double rate = getAverateRate(re, files[i].getAbsolutePath());
+//            System.out.print("Threshold determination : " + rate + "  ");
+//        }
+        if (re != null) {
+            int S = re.size();
+            if (S != 0) {
+                double rate = getAverateRate(re, imageLink);
+                verificationNotify(rate, thres);
+            }
+        } else {
+            JOptionPane.showMessageDialog(null, "Không có vector trong cơ sở dữ liệu");
+        }
+
+    }//GEN-LAST:event_jButton2MouseClicked
+
+    public void verificationNotify(double rate, ArrayList<ThresholdDatatype> thres) {
+        System.out.println("Mean of rate between distance compared with mean vector and diviation: " + rate);
+        //Doc nguong trong co so du lieu su theo identity
+        if (thres != null && thres.size() != 0) {
+            double TT = thres.get(0).getThreshold();
+            //So sanh voi nguong va dua ra ket qua
+            if (rate < TT) {
+                JOptionPane.showMessageDialog(null, "Xác thực thành công");
+            } else {
+                JOptionPane.showMessageDialog(null, "Xác thực thất bại");
+            }
+        } else {
+            JOptionPane.showMessageDialog(null, "Không có ngưỡng trong cơ sở dữ liệu");
+        }
+
+    }
+
+    public double getAverateRate(ArrayList<EnrollDatatype> re, String link) {
+        if (re != null) {
+            int S = re.size();
+            if (S != 0) {
+                //Tinh vector trung binh
+                double[] mean = new double[8];
+                for (int i = 0; i < S; i++) {
+                    mean[0] += re.get(i).getBaselineSlantAngle();
+                    mean[1] += re.get(i).getAspectRatio();
+                    mean[2] += re.get(i).getNormalizedAre();
+                    mean[3] += re.get(i).getCenterGravity_X();
+                    mean[4] += re.get(i).getCenterGravity_Y();
+                    mean[5] += re.get(i).getJointedCenterAngle();
+                    mean[6] += re.get(i).getEdgePoint();
+                    mean[7] += re.get(i).getCrossPoint();
+                }
+                for (int i = 0; i < 8; i++) {
+                    mean[i] = mean[i] / S;
+                }
+                //Tinh vector do lech chuan
+                double[] diviation = new double[8];
+                for (int i = 0; i < S; i++) {
+                    diviation[0] = (mean[0] - re.get(i).getBaselineSlantAngle()) * (mean[0] - re.get(i).getBaselineSlantAngle());
+                    diviation[1] = (mean[1] - re.get(i).getAspectRatio()) * (mean[1] - re.get(i).getAspectRatio());
+                    diviation[2] = (mean[2] - re.get(i).getNormalizedAre()) * (mean[2] - re.get(i).getNormalizedAre());
+                    diviation[3] = (mean[3] - re.get(i).getCenterGravity_X()) * (mean[3] - re.get(i).getCenterGravity_X());
+                    diviation[4] = (mean[4] - re.get(i).getCenterGravity_Y()) * (mean[4] - re.get(i).getCenterGravity_Y());
+                    diviation[5] = (mean[5] - re.get(i).getJointedCenterAngle()) * (mean[5] - re.get(i).getJointedCenterAngle());
+                    diviation[6] = (mean[6] - re.get(i).getEdgePoint()) * (mean[6] - re.get(i).getEdgePoint());
+                    diviation[7] = (mean[7] - re.get(i).getCrossPoint()) * (mean[7] - re.get(i).getCrossPoint());
+                }
+                for (int i = 0; i < 8; i++) {
+                    diviation[i] = Math.sqrt(diviation[i] / S);
+                }
+
+                //Tinh vector dac trung
+                int[][] binImage = new Preprocessing(link).getBinaryImage();
+                double[] fetureVector = new FeatureExtraction().getFeatureVector(binImage);
+
+                //Tinh trung binh ti so khoang cach va do lech giua hai vector dac trung va trung binh
+                double rate = 0;
+                for (int i = 0; i < 8; i++) {
+                    if (diviation[i] != 0) {
+                        double tmp = (fetureVector[i] - mean[i]) / diviation[i];
+                        rate += tmp * tmp;
+                    }
+                }
+                //Neu tim duoc thuat toan baseline slant angle thi doi thanh 8
+                rate = rate / 7;
+                return rate;
+            }
+        }
+        return -1;
+    }
 
     /**
      * @param args the command line arguments

@@ -34,30 +34,39 @@ public class Preprocessing {
     }
 
     public static void main(String[] args) {
-        String link = "C:\\Users\\NguyenVanDung\\Desktop\\Base line slant angle\\test.png";
-        Preprocessing pre = new Preprocessing(link);
-//        System.out.println(pre.getM());
-//        System.out.println(pre.getN());
+//        String link = "C:\\Users\\NguyenVanDung\\Desktop\\Base line slant angle\\test.png";
+        Preprocessing pre = new Preprocessing();
+//        int X = pre.getM();
+//        int Y = pre.getN();
 
-        int X = pre.getM();
-        int Y = pre.getN();
-//        int[][] image = new int[5][5];
-//        int X = 5;
-//        int Y = 5;
-//        for (int i = 0; i < X; i++) {
-//            for (int j = 0; j < Y; j++) {
-//                image[i][j] = i * 5 + j;
-//            }
-//        }
-
-        int[][] matrix = pre.smothenImage(pre.makeIdealImge(pre.invertImage(pre.getMatrix())));
+        int[][] image = new int[5][5];
+        int X = image.length;
+        int Y = image[0].length;
         for (int i = 0; i < X; i++) {
             for (int j = 0; j < Y; j++) {
-                System.out.print(matrix[i][j] + " ");
+                image[i][j] = 0;
+            }
+        }
+        image[2][2] = 125;
+        image[3][3] = 200;
+        image[4][4] = 150;
+
+        for (int i = 0; i < X; i++) {
+            for (int j = 0; j < Y; j++) {
+                System.out.print(image[i][j] + "  ");
             }
             System.out.println("");
         }
-        System.out.println(pre.thresCalculate(matrix));
+
+//        int[][] matrix = pre.smothenImage(image);
+//        for (int i = 0; i < X; i++) {
+//            for (int j = 0; j < Y; j++) {
+//                System.out.print(matrix[i][j] + " ");
+//            }
+//            System.out.println("");
+//        }
+        float thres = pre.thresCalculate(image);
+        System.out.println(thres);
 
     }
 
@@ -101,6 +110,15 @@ public class Preprocessing {
         float diff = 5;
         float T1 = 100;
         float T2 = 0;
+        //Khoi tao T1 bang gia tri trung binh do sang diem anh
+        long sum = 0;
+        for (int i = 0; i < X; i++) {
+            for (int j = 0; j < Y; j++) {
+                sum += image[i][j];
+            }
+        }
+        T1 = sum / (X * Y);
+
         while (diff >= 0.5) {
             int sum1 = 0;
             int sum2 = 0;
@@ -127,7 +145,7 @@ public class Preprocessing {
             T1 = T2;
 
         }
-
+        System.out.println("Image threshold : " + T1);
         return T1;
     }
 

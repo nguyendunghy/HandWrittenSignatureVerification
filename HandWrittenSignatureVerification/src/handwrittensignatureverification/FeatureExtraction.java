@@ -5,6 +5,10 @@
  */
 package handwrittensignatureverification;
 
+import com.sun.xml.internal.ws.server.sei.InvokerTube;
+import java.awt.Color;
+import java.awt.Graphics;
+import java.awt.Graphics2D;
 import java.awt.geom.AffineTransform;
 import java.awt.image.AffineTransformOp;
 import java.awt.image.BufferedImage;
@@ -12,6 +16,9 @@ import java.awt.image.Raster;
 import java.io.File;
 import java.io.IOException;
 import javax.imageio.ImageIO;
+import javax.swing.JComponent;
+import javax.swing.JFrame;
+import org.jfree.ui.RefineryUtilities;
 
 /**
  *
@@ -19,55 +26,76 @@ import javax.imageio.ImageIO;
  */
 public class FeatureExtraction {
 
-    private String imageLink;
     private int[][] matrix;
     private int[][] bbMatrix;   //Bounding box matrix
     private int M;
     private int N;
 
-    public FeatureExtraction(int[][] matrix, String imageLink) {
+    public FeatureExtraction(int[][] matrix) {
         this.matrix = matrix;
-        this.imageLink = imageLink;
     }
 
     public FeatureExtraction() {
     }
 
     public static void main(String[] args) throws IOException {
-        int[][] data = new int[6][6];
-        data[0][1] = 1;
-        data[1][1] = 1;
-        data[2][1] = 1;
-        data[3][1] = 1;
-        data[4][1] = 1;
 
-        data[1][4] = 1;
-        data[2][4] = 1;
-        data[3][4] = 1;
-        data[4][4] = 1;
-        data[5][4] = 1;
-        data[3][3] = 1;
-        data[3][5] = 1;
+        String link = "C:\\Users\\NguyenVanDung\\Desktop\\Base line slant angle\\10.png";
+        int[][] data = new Preprocessing(link).getBinaryImage();
+        FeatureExtraction feature = new FeatureExtraction();
 
-        for (int i = 0; i < 6; i++) {
-            for (int j = 0; j < 6; j++) {
-                System.out.print(data[i][j] + " ");
+        //int[][] edgeData = feature.filter(data, "sobel");
+        //feature.saveImage(edgeData, "edgeImage");
+        JFrame frame = new JFrame("Test");
+
+        frame.add(new JComponent() {
+
+            BufferedImage image = ImageIO.read(new File(link));
+
+            @Override
+            protected void paintComponent(Graphics g) {
+                super.paintComponent(g);
+
+                double angle = feature.getBaselineSlantAngle(data);
+                //double angle = 0;
+                feature.drawChart(data, (float) angle);
+
+                System.out.println("Baseline slant angle : " + angle);
+                AffineTransform att = new AffineTransform();
+
+                // 4. translate it to the center of the component
+                att.translate(getWidth() / 2, getHeight() / 2);
+                // 3. do the actual rotation
+                att.rotate(angle);
+
+                // 2. just a scale because this image is big
+                att.scale(0.5, 0.5);
+
+                // 1. translate the object so that you rotate it around the 
+                //    center (easier :))
+                att.translate(-image.getWidth() / 2, -image.getHeight() / 2);
+                // draw the image
+                Graphics2D g2d = (Graphics2D) g;
+                g2d.drawImage(image, att, null);
+
             }
-            System.out.println("");
-        }
-        //int[][] result = new FeatureExtraction().makeBoundingBoxMatrix(data);
-        String link = "C:\\Users\\NguyenVanDung\\Desktop\\Base line slant angle\\out.png";
-        double[] r = new FeatureExtraction().getFeatureVector(data, link);
+        });
 
-        for (double ele : r) {
-            System.out.print(ele + "|");
-        }
-
+        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        frame.setSize(800, 800);
+        frame.setVisible(true);
     }
 
-    public double[] getFeatureVector(int[][] matrix, String imageLink) throws IOException {
+    /**
+     *
+     * @param matrix : Ma trận bounding box của ảnh chữ ký.
+     * @return : Vector đặc trưng.
+     */
+    public double[] getFeatureVector(int[][] image) {
         double[] vector = new double[8];
-        vector[0] = getBaselineSlantAngle(imageLink);
+        int[][] matrix = getBoundingBoxMatrix(image);
+        //vector[0] = getBaselineSlantAngle(matrix);
+        vector[0] = 1;
         vector[1] = getAspectRatio(matrix);
         vector[2] = getNormalizeArea(matrix);
         vector[3] = getCenterGravity(matrix)[0];
@@ -75,30 +103,135 @@ public class FeatureExtraction {
         vector[5] = getSlopeJoinCenterGravity(matrix);
         vector[6] = getEdgePoint(matrix);
         vector[7] = getCrossPoint(matrix);
-
         return vector;
+    }
+
+    //Lay matran do sang cua anh
+    public int[][] getImageMatrix(File file) {
+        try {
+            BufferedImage img = ImageIO.read(file);
+            Raster raster = img.getData();
+            int wi = raster.getWidth();
+            int he = raster.getHeight();
+            int pixels[][] = new int[wi][he];
+            for (int x = 0; x < wi; x++) {
+                for (int y = 0; y < he; y++) {
+                    pixels[x][y] = raster.getSample(x, y, 0);
+                }
+            }
+
+            return pixels;
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    public void drawChart(int[][] data, float Ag) {
+        int M = data.length;
+        int N = data[0].length;
+        BufferedImage image = new BufferedImage(M, N, BufferedImage.TYPE_INT_RGB);
+        for (int i = 0; i < M; i++) {
+            for (int j = 0; j < N; j++) {
+                int value = data[i][j] << 16 | data[i][j] << 8 | data[i][j];
+                image.setRGB(i, j, value);
+            }
+        }
+        AffineTransform at = new AffineTransform();
+        at.translate(M / 2, N / 2);
+        at.rotate(Ag);
+        at.translate(-M / 2, -N / 2);
+        AffineTransformOp op = new AffineTransformOp(at, AffineTransformOp.TYPE_BILINEAR);
+        BufferedImage img = new BufferedImage(M, N, BufferedImage.TYPE_INT_RGB);
+        op.filter(image, img);
+        Raster raster = img.getData();
+        int wid = raster.getWidth();
+        int hei = raster.getHeight();
+        int pixels[][] = new int[wid][hei];
+        for (int x = 0; x < wid; x++) {
+            for (int y = 0; y < hei; y++) {
+                pixels[x][y] = raster.getSample(x, y, 0);
+            }
+        }
+
+        float[] proVec = new float[wid];
+        for (int i = 0; i < wid; i++) {
+            for (int j = 0; j < hei; j++) {
+                proVec[i] += pixels[i][j];
+            }
+        }
+
+        FrequencyChart chart = new FrequencyChart("Biểu đồ", "Biểu đồ hình chiếu ngang", proVec, "dòng", "điểm");
+        chart.pack();
+        RefineryUtilities.centerFrameOnScreen(chart);
+        chart.setVisible(true);
+    }
+
+    public int[][] filter(int[][] I, String name) {
+        int M = I.length;
+        int N = I[0].length;
+        if (name.equalsIgnoreCase("sobel")) {
+            int[][] soX = new int[M][N];
+            int[][] soY = new int[M][N];
+            int[][] result = new int[M][N];
+            for (int i = 1; i < M - 1; i++) {
+                for (int j = 1; j < N - 1; j++) {
+                    soX[i][j] = I[i - 1][j - 1] - I[i - 1][j + 1] + 2 * I[i][j - 1] - 2 * I[i][j + 1] + I[i + 1][j - 1] - I[i + 1][j + 1];
+                    soY[i][j] = I[i - 1][j - 1] + 2 * I[i - 1][j] + I[i - 1][j + 1] - I[i + 1][j - 1] - 2 * I[i + 1][j] - I[i + 1][j + 1];
+                    result[i][j] = soX[i][j] + +soY[i][j] > 0 ? 1 : 0;
+                }
+            }
+            return result;
+
+        }
+
+        if (name.equalsIgnoreCase("prewitt")) {
+            int[][] PreX = new int[M][N];
+            int[][] PreY = new int[M][N];
+            int[][] result = new int[M][N];
+            for (int i = 1; i < M - 1; i++) {
+                for (int j = 1; j < N - 1; j++) {
+                    PreX[i][j] = I[i - 1][j - 1] - I[i - 1][j + 1] + I[i][j - 1] - I[i][j + 1] + I[i + 1][j - 1] - I[i + 1][j + 1];
+                    PreY[i][j] = I[i - 1][j - 1] + I[i - 1][j] + I[i - 1][j + 1] - I[i + 1][j - 1] - I[i + 1][j] - I[i + 1][j + 1];
+                    result[i][j] = (PreX[i][j] + PreY[i][j]) > 0 ? 1 : 0;
+                }
+            }
+            return result;
+        }
+        return null;
     }
 
     /**
      *
-     * @param imageLink : Đường link đến ảnh cần xoay
+     * @param matrix : Mảng hai chiều bounding box của ảnh
      * @return : Góc baseline slant angle
-     * @throws IOException : Lỗi vào ra.
      */
-    public double getBaselineSlantAngle(String imageLink) throws IOException {
-        BufferedImage image = ImageIO.read(new File(imageLink));
+    public double getBaselineSlantAngle(int[][] matrix) {
+        int M = matrix.length;
+        int N = matrix[0].length;
+        int numPeak = 5;
+        int seg = 20;
+
+        BufferedImage image = new BufferedImage(M, N, BufferedImage.TYPE_INT_RGB);
+        for (int i = 0; i < M; i++) {
+            for (int j = 0; j < N; j++) {
+                int value = matrix[i][j] << 16 | matrix[i][j] << 8 | matrix[i][j];
+                image.setRGB(i, j, value);
+            }
+        }
         AffineTransform at = new AffineTransform();
 
         double angle1 = 0; //Luu giu goc co projection lon nhat voi buoc nhay bang 1
         double angle = 0; //Luu giu goc co projection lon nhat voi buoc nhay bang 0.1
         //Tìm góc để có ảnh hình chiếu có giá trị lớn nhất với bước nhảy là 5
-        int MAX = 0;
-        for (int i = 0; i <= 90; i += 1) {
+        double MAX = 0;
+        for (int i = 0; i <= 90; i++) {
             at.translate(image.getWidth() / 2, image.getHeight() / 2);
             at.rotate(Math.PI * i / 180);
             at.translate(-image.getWidth() / 2, -image.getHeight() / 2);
             AffineTransformOp op = new AffineTransformOp(at, AffineTransformOp.TYPE_BILINEAR);
-            BufferedImage img = new BufferedImage(image.getWidth(), image.getHeight(), BufferedImage.TYPE_BYTE_BINARY);
+            BufferedImage img = new BufferedImage(image.getWidth(), image.getHeight(), BufferedImage.TYPE_INT_RGB);
             op.filter(image, img);
             Raster raster = img.getData();
             int wid = raster.getWidth();
@@ -109,7 +242,8 @@ public class FeatureExtraction {
                     pixels[x][y] = raster.getSample(x, y, 0);
                 }
             }
-            int maxrow = getMaxSumOfRow(pixels);
+
+            double maxrow = getMaxAveragePeakInSegment(pixels, seg, numPeak);
             if (MAX < maxrow) {
                 angle1 = i;
                 MAX = maxrow;
@@ -122,7 +256,7 @@ public class FeatureExtraction {
             at.rotate(Math.PI * i / 180);
             at.translate(-image.getWidth() / 2, -image.getHeight() / 2);
             AffineTransformOp op = new AffineTransformOp(at, AffineTransformOp.TYPE_BILINEAR);
-            BufferedImage img = new BufferedImage(image.getWidth(), image.getHeight(), BufferedImage.TYPE_BYTE_BINARY);
+            BufferedImage img = new BufferedImage(image.getWidth(), image.getHeight(), BufferedImage.TYPE_INT_RGB);
             op.filter(image, img);
             Raster raster = img.getData();
             int wid = raster.getWidth();
@@ -133,34 +267,269 @@ public class FeatureExtraction {
                     pixels[x][y] = raster.getSample(x, y, 0);
                 }
             }
-            int maxrow = getMaxSumOfRow(pixels);
+            double maxrow = getMaxAveragePeakInSegment(pixels, seg, numPeak);
             if (MAX < maxrow) {
                 angle = i;
                 MAX = maxrow;
             }
         }
-        return angle;
+        return (angle * Math.PI) / 180;
+    }
+
+    /**
+     *
+     * @param matrix
+     * @param name
+     * @return
+     */
+    private boolean saveImage(int[][] matrix, String name) {
+        int M = matrix.length;
+        int N = matrix[0].length;
+        try {
+            BufferedImage theImage = new BufferedImage(M, N, BufferedImage.TYPE_INT_RGB);
+            for (int y = 0; y < M; y++) {
+                for (int x = 0; x < N; x++) {
+                    int tmp = matrix[y][x] != 0 ? 255 : 0;
+                    int value = tmp << 16 | tmp << 8 | tmp;
+                    theImage.setRGB(y, x, value);
+                }
+            }
+            name = name + ".png";
+            File outputfile = new File(name);
+            ImageIO.write(theImage, "png", outputfile);
+            return true;
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+
+    public double getMaxAverageInSegment(int[][] matrix, int segLength, int numMax) {
+        //Kiem tra dieu kien cua bien
+        if (matrix == null) {
+            return -1;
+        }
+        if (segLength < 1 || segLength > matrix.length) {
+            return -1;
+        }
+
+        int M = matrix.length;
+        int N = matrix[0].length;
+        int[] proVec = new int[M];
+        double averageMax = 0;
+        int countMax = 0;
+
+        for (int i = 0; i < M; i++) {
+            for (int j = 0; j < N; j++) {
+                proVec[i] += matrix[i][j];
+            }
+        }
+        for (int i = 0; i <= M - segLength; i = i + segLength) {
+            int[] tmp = new int[segLength];
+            for (int j = i; j < i + segLength; j++) {
+                tmp[j - i] = proVec[j];
+            }
+            tmp = SelectionSort(tmp);
+            int num = numMax > segLength ? segLength : numMax;
+            for (int t = 0; t < num; t++) {
+                averageMax += tmp[segLength - 1 - t];
+                countMax++;
+            }
+        }
+
+        if (M % segLength != 0) {
+            int odd = M % segLength;
+            int[] tmp = new int[segLength];
+            for (int j = M - odd; j < M; j++) {
+                tmp[j - M + odd] = proVec[j];
+            }
+            tmp = SelectionSort(tmp);
+            int num = numMax > segLength ? segLength : numMax;
+            for (int t = 0; t < num; t++) {
+                averageMax += tmp[segLength - 1 - t];
+                countMax++;
+            }
+        }
+
+        if (countMax == 0) {
+            return -1;
+        }
+
+        return (double) averageMax / countMax;
+
+    }
+
+    /**
+     *
+     * @param matrix
+     * @param num Do dai doan
+     * @return
+     */
+    public double getMaxAveragePeakInSegment(int[][] matrix, int segLength, int numPeak) {
+        //Kiem tra dieu kien cua bien
+        if (matrix == null) {
+            return -1;
+        }
+        if (segLength < 1 || segLength > matrix.length) {
+            return -1;
+        }
+
+        int M = matrix.length;
+        int N = matrix[0].length;
+        int[] proVec = new int[M];
+        int countPeak = 0;
+        int averagePeak = 0;
+
+        for (int i = 0; i < M; i++) {
+            for (int j = 0; j < N; j++) {
+                proVec[i] += matrix[i][j];
+            }
+        }
+        for (int i = 0; i <= M - segLength; i = i + segLength) {
+            int[] tmpPeak = new int[segLength];
+            int count = 0;
+            for (int j = i; j < i + segLength; j++) {
+                if (j == 0 || j == M - 1) {
+                    continue;
+                }
+                if (proVec[j] > proVec[j - 1] && proVec[j] > proVec[j + 1]) {
+                    tmpPeak[count] = proVec[j];
+                    count++;
+                }
+            }
+            tmpPeak = SelectionSort(tmpPeak);
+            int num = count > numPeak ? numPeak : count;
+            for (int t = 0; t < num; t++) {
+                averagePeak += tmpPeak[segLength - 1 - t];
+                countPeak++;
+            }
+
+        }
+
+        if (M % segLength != 0) {
+            int odd = M % segLength;
+            int[] tmpPeak = new int[segLength];
+            int count = 0;
+            for (int j = M - odd; j < M - 1; j++) {
+                if (proVec[j] > proVec[j - 1] && proVec[j] > proVec[j + 1]) {
+                    tmpPeak[count] = proVec[j];
+                    count++;
+                }
+            }
+            tmpPeak = SelectionSort(tmpPeak);
+            int num = count > numPeak ? numPeak : count;
+            for (int t = 0; t < num; t++) {
+                averagePeak += tmpPeak[segLength - 1 - t];
+                countPeak++;
+            }
+        }
+
+        if (countPeak == 0) {
+            return -1;
+        }
+
+        return (double) averagePeak / countPeak;
     }
 
     /**
      *
      * @param matrix Mảng hai chiều các số thuộc kiểu int
+     * @param num Số dòng quét ngang ảnh
      * @return Giá trị lớn nhất của hàng có hình chiếu lên trên trục y
      */
-    private static int getMaxSumOfRow(int[][] matrix) {
+    public int getMaxAverageOfPeak(int[][] matrix, int num) {
+        //Kiem tra dieu kien cua bien
+        if (matrix == null) {
+            return -1;
+        }
+        if (num < 1 || num > matrix.length) {
+            return -1;
+        }
+
         int numRow = matrix.length;
         int numCol = matrix[0].length;
-        int max = 0;
+        int[] proVec = new int[numRow];
+        int countPeak = 0;
+        int averageMaxPeak = 0;
+        int[] Peak = new int[numRow];
+        int MIN_PEAK = 0;
+        int countBigPeak = 0;
         for (int i = 0; i < numRow; i++) {
-            int sum = 0;
             for (int j = 0; j < numCol; j++) {
-                sum += matrix[i][j];
-            }
-            if (max < sum) {
-                max = sum;
+                proVec[i] += matrix[i][j];
             }
         }
-        return max;
+
+        for (int i = 1; i < numRow - 1; i++) {
+            if (proVec[i] > proVec[i - 1] && proVec[i] > proVec[i + 1]) {
+                Peak[countPeak] = proVec[i];
+                countPeak++;
+            }
+        }
+
+        int[] largePeak = new int[countPeak];
+        for (int i = 0; i < countPeak; i++) {
+            if (Peak[i] >= MIN_PEAK) {
+                largePeak[countBigPeak] = Peak[i];
+                countBigPeak++;
+            }
+        }
+        System.out.println("Numbers of peaks are : " + countPeak);
+        System.out.println("Numbers of big peaks are : " + countBigPeak);
+        if (countPeak == 0) {
+            return 0;
+        }
+
+        largePeak = SelectionSort(largePeak);
+        num = num > countBigPeak ? countBigPeak : num;
+        // num = countAverPeak / 2;
+        for (int i = 0; i < num; i++) {
+            averageMaxPeak += largePeak[countPeak - 1 - i];
+        }
+        System.out.println("Average Max Peak : " + averageMaxPeak);
+        if (num == 0) {
+            return -1;
+        }
+        averageMaxPeak = averageMaxPeak / num;
+
+//        for(int i=0; i< proVec.length; i++){
+//            System.out.print(proVec[i] + " ");
+//        }
+//        System.out.println("");
+//        
+//        for (int i = 0; i <= numRow - num; i = i + num) {
+//            int sum = 0;
+//            for (int t = i; t < i + num; t++) {
+//                sum += proVec[t];
+//            }
+//            max = max < sum ? sum : max;
+//        }
+//
+//        if (numRow % num != 0) {
+//            int sum = 0;
+//            for (int i = numRow - num; i < numRow; i++) {
+//                sum += proVec[i];
+//            }
+//            max = max < sum ? sum : max;
+//        }
+        return averageMaxPeak;
+    }
+
+    public int[] SelectionSort(int[] A) {
+        int N = A.length;
+        for (int i = 0; i < N; i++) {
+            int min = i;
+            for (int j = i + 1; j < N; j++) {
+                if (A[j] < A[min]) {
+                    min = j;
+                }
+            }
+            int tmp = A[min];
+            A[min] = A[i];
+            A[i] = tmp;
+        }
+
+        return A;
     }
 
     /**
@@ -178,13 +547,6 @@ public class FeatureExtraction {
                 boundImage[i + 1][j + 1] = image[i][j];
             }
         }
-//        System.out.println("");
-//        for (int i = 0; i < M + 2; i++) {
-//            for (int j = 0; j < N + 2; j++) {
-//                System.out.print(boundImage[i][j] + " ");
-//            }
-//            System.out.println("");
-//        }
 
         for (int i = 1; i < M + 1; i++) {
             for (int j = 1; j < N + 1; j++) {
@@ -195,7 +557,6 @@ public class FeatureExtraction {
                             sum += boundImage[l][k];
                         }
                     }
-
                     //sum lon hon bang 4 vi tinh ca tong diem boundImage[i][j]
                     if (sum >= 4) {
                         count++;
@@ -221,13 +582,6 @@ public class FeatureExtraction {
                 boundImage[i + 1][j + 1] = image[i][j];
             }
         }
-//        System.out.println("");
-//        for (int i = 0; i < M + 2; i++) {
-//            for (int j = 0; j < N + 2; j++) {
-//                System.out.print(boundImage[i][j] + " ");
-//            }
-//            System.out.println("");
-//        }
 
         for (int i = 1; i < M + 1; i++) {
             for (int j = 1; j < N + 1; j++) {
@@ -238,7 +592,6 @@ public class FeatureExtraction {
                             sum += boundImage[l][k];
                         }
                     }
-
                     //sum bang 2 vi tinh ca tong diem boundImage[i][j]
                     if (sum == 2) {
                         count++;
@@ -299,11 +652,12 @@ public class FeatureExtraction {
         center[2] = (double) weiX / Weight;
         center[3] = (double) weiY / Weight;
 
-        double Y = center[3] - center[1] + 1;
-        double X = center[2] - center[0] + 1;
+        double Y = center[3] - center[1];
+        double X = center[2] - center[0];
         double tan = Y / X;
         return (float) Math.atan(tan);
     }
+
     /**
      *
      * @param image : Mảng bounding box của ảnh nhị phân
@@ -337,8 +691,8 @@ public class FeatureExtraction {
         crdnt[1] = (double) weiY / Weight;
 
         //Nhân với chuẩn hóa ảnh là 1000 x 1000
-        crdnt[0] = crdnt[0] * standard / M;
-        crdnt[1] = crdnt[1] * standard / N;
+        crdnt[0] = crdnt[0] * standard / N;
+        crdnt[1] = crdnt[1] * standard / M;
 
         return crdnt;
     }
@@ -375,7 +729,7 @@ public class FeatureExtraction {
      * @return : Mảng ảnh bounding box.
      * @param matrix : Mảng ảnh hai chiều nhị phân.
      */
-    public int[][] makeBoundingBoxMatrix(int[][] matrix) {
+    public int[][] getBoundingBoxMatrix(int[][] matrix) {
         int M = matrix.length;
         int N = matrix[0].length;
         int X1 = M - 1;
