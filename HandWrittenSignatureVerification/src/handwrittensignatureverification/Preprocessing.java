@@ -34,8 +34,10 @@ public class Preprocessing {
     }
 
     public static void main(String[] args) {
-//        String link = "C:\\Users\\NguyenVanDung\\Desktop\\Base line slant angle\\test.png";
+        String link = "C:\\Users\\NguyenVanDung\\Desktop\\Base line slant angle\\Baseline\\9.png";
         Preprocessing pre = new Preprocessing();
+        pre.getImageMatrix(new File(link));
+        
 //        int X = pre.getM();
 //        int Y = pre.getN();
 
@@ -213,12 +215,12 @@ public class Preprocessing {
         try {
             BufferedImage img = ImageIO.read(file);
             Raster raster = img.getData();
-            int wi = raster.getWidth();
-            int he = raster.getHeight();
-            int pixels[][] = new int[wi][he];
-            for (int x = 0; x < wi; x++) {
-                for (int y = 0; y < he; y++) {
-                    pixels[x][y] = raster.getSample(x, y, 0);
+            int numCol = raster.getWidth();
+            int numRow = raster.getHeight();
+            int pixels[][] = new int[numRow][numCol];
+            for (int x = 0; x < numRow; x++) {
+                for (int y = 0; y < numCol; y++) {
+                    pixels[x][y] = raster.getSample(y, x, 0);
                 }
             }
 

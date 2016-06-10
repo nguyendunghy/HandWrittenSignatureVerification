@@ -40,78 +40,80 @@ public class FeatureExtraction {
 
     public static void main(String[] args) throws IOException {
 
-//        String link = "C:\\Users\\NguyenVanDung\\Desktop\\Base line slant angle\\Baseline\\9.png";
-//        int[][] data = new Preprocessing(link).getBinaryImage();
-//        FeatureExtraction feature = new FeatureExtraction();
-//
-//        //int[][] edgeData = feature.filter(data, "sobel");
-//        //feature.saveImage(edgeData, "edgeImage");
-//        JFrame frame = new JFrame("Test");
-//
-//        frame.add(new JComponent() {
-//
-//            BufferedImage image = ImageIO.read(new File(link));
-//
-//            @Override
-//            protected void paintComponent(Graphics g) {
-//                super.paintComponent(g);
-//
-//                double angle = feature.getBaselineSlantAngle(data);
-//                //double angle = 0;
-//                feature.drawChart(data, (float) angle);
-//
-//                System.out.println("Baseline slant angle : " + angle);
-//                AffineTransform att = new AffineTransform();
-//
-//                // 4. translate it to the center of the component
-//                att.translate(getWidth() / 2, getHeight() / 2);
-//                // 3. do the actual rotation
-//                att.rotate(angle);
-//
-//                // 2. just a scale because this image is big
-//                att.scale(0.5, 0.5);
-//
-//                // 1. translate the object so that you rotate it around the 
-//                //    center (easier :))
-//                att.translate(-image.getWidth() / 2, -image.getHeight() / 2);
-//                // draw the image
-//                Graphics2D g2d = (Graphics2D) g;
-//                g2d.drawImage(image, att, null);
-//
+        String link = "C:\\Users\\NguyenVanDung\\Desktop\\Base line slant angle\\Baseline\\10.png";
+        int[][] data = new Preprocessing(link).getBinaryImage();
+        FeatureExtraction feature = new FeatureExtraction();
+
+        //int[][] edgeData = feature.filter(data, "sobel");
+        //double angle = feature.getSlopeJoinCenterGravity(data);
+        //feature.getSixFoldSurface(data);
+        //.out.println("Angle = " + angle);
+        //feature.saveImage(edgeData, "edgeImage");
+        JFrame frame = new JFrame("Test");
+
+        frame.add(new JComponent() {
+
+            BufferedImage image = ImageIO.read(new File(link));
+
+            @Override
+            protected void paintComponent(Graphics g) {
+                super.paintComponent(g);
+
+                double angle = -feature.getSlopeJoinCenterGravity(data);
+                //angle = 0;
+                //feature.drawChart(data, (float) angle);
+
+                System.out.println("Baseline slant angle : " + angle);
+                AffineTransform att = new AffineTransform();
+
+                // 4. translate it to the center of the component
+                att.translate(getWidth() / 2, getHeight() / 2);
+                // 3. do the actual rotation
+                att.rotate(angle);
+
+                // 2. just a scale because this image is big
+                att.scale(0.5, 0.5);
+
+                // 1. translate the object so that you rotate it around the 
+                //    center (easier :))
+                att.translate(-image.getWidth() / 2, -image.getHeight() / 2);
+                // draw the image
+                Graphics2D g2d = (Graphics2D) g;
+                g2d.drawImage(image, att, null);
+
+            }
+        });
+
+        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        frame.setSize(800, 800);
+        frame.setVisible(true);
+//        int[][] test = new int[9][9];
+//        for (int i = 0; i < 9; i++) {
+//            for (int j = 0; j < 9; j++) {
+//                test[i][j] = i == j || i == 8 - j ? 0 : 0;
 //            }
-//        });
+//        }
 //
-//        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-//        frame.setSize(800, 800);
-//        frame.setVisible(true);
-        int[][] test = new int[9][9];
-        for (int i = 0; i < 9; i++) {
-            for (int j = 0; j < 9; j++) {
-                test[i][j] = i == j || i == 8 - j ?  0 : 0;
-            }
-        }
-
-        test[0][1] = 1;
-        test[1][0] = 1;
-        test[1][2] = 1;
-        test[2][1] = 1;
-        test[2][4] = 1;
-        test[3][3] = 1;
-        test[3][5] = 1;
-        test[4][4] = 1;
-        for (int i = 0; i < 9; i++) {
-            for (int j = 0; j < 9; j++) {
-                System.out.print(test[i][j] + " ");
-            }
-            System.out.println("");
-        }
-
-        FeatureExtraction fe = new FeatureExtraction();
-        double[] re = fe.getSixFoldSurface(test);
-        for (int i = 0; i < re.length; i++) {
-            System.out.println(re[i]);
-        }
-
+//        test[0][1] = 1;
+//        test[1][0] = 1;
+//        test[1][2] = 1;
+//        test[2][1] = 1;
+//        test[2][4] = 1;
+//        test[3][3] = 1;
+//        test[3][5] = 1;
+//        test[4][4] = 1;
+//        for (int i = 0; i < 9; i++) {
+//            for (int j = 0; j < 9; j++) {
+//                System.out.print(test[i][j] + " ");
+//            }
+//            System.out.println("");
+//        }
+//
+//        FeatureExtraction fe = new FeatureExtraction();
+//        double[] re = fe.getSixFoldSurface(test);
+//        for (int i = 0; i < re.length; i++) {
+//            System.out.println(re[i]);
+//        }
     }
 
     /**
@@ -120,17 +122,33 @@ public class FeatureExtraction {
      * @return : Vector đặc trưng.
      */
     public double[] getFeatureVector(int[][] image) {
-        double[] vector = new double[8];
+        double[] vector = new double[15];
         int[][] matrix = getBoundingBoxMatrix(image);
-        //vector[0] = getBaselineSlantAngle(matrix);
-        vector[0] = 1;
+        vector[0] = getBaselineSlantAngle(matrix);
         vector[1] = getAspectRatio(matrix);
         vector[2] = getNormalizeArea(matrix);
-        vector[3] = getCenterGravity(matrix)[0];
-        vector[4] = getCenterGravity(matrix)[1];
+        
+        double[] centerG = getCenterGravity(matrix);
+
+        vector[3] = centerG[0];
+        vector[4] = centerG[1];
         vector[5] = getSlopeJoinCenterGravity(matrix);
-        vector[6] = getEdgePoint(matrix);
-        vector[7] = getCrossPoint(matrix);
+
+        double[] trisuface = getTriSurface(matrix);
+
+        vector[6] = trisuface[0];
+        vector[7] = trisuface[1];
+        vector[8] = trisuface[2];
+
+        double[] sixfold = getSixFoldSurface(matrix);
+
+        vector[9] = sixfold[0];
+        vector[10] = sixfold[1];
+        vector[11] = sixfold[2];
+        vector[12] = sixfold[3];
+        vector[13] = sixfold[4];
+        vector[14] = sixfold[5];
+
         return vector;
     }
 
@@ -183,8 +201,20 @@ public class FeatureExtraction {
         }
         M3 = weigh == 0 ? M / 2 : (int) pro / weigh;
 
-        System.out.println("M1,M2,M3 = " + M1 + " " + M2 + " " + M3);
-
+//        for (int i = 0; i < M; i++) {
+//            matrix[i][N1] = 1;
+//            matrix[i][N2] = 1;
+//        }
+//        for(int j=0; j< N1; j++){
+//            matrix[M1][j] = 1;
+//        }
+//        for(int j=N1; j< N2; j++){
+//            matrix[M2][j] = 1;
+//        }
+//         for(int j=N2; j< N; j++){
+//            matrix[M3][j] = 1;
+//        }
+//        saveImage(matrix, "sixfold_surface");
         for (int i = 0; i < M1; i++) {
             for (int j = 0; j < N1; j++) {
                 re[0] = matrix[i][j] != 0 ? re[0] + 1 : re[0];
@@ -676,6 +706,38 @@ public class FeatureExtraction {
 
         double Y = center[3] - center[1];
         double X = center[2] - center[0];
+
+//        int colMin = (int) center[0];
+//        int colMax = (int) center[2];
+//        int rowMin = center[3] >= center[1] ? (int) center[1] : (int) center[3];
+//        int rowMax = center[3] < center[1] ? (int) center[1] : (int) center[3];
+//        for (int i = 0; i < M; i++) {
+//            image[i][N / 2] = 1;
+//        }
+//
+//        for (int i = (int) center[1] - 5; i < center[1] + 5; i++) {
+//            for (int j = (int) center[0] - 5; j < center[0] + 5; j++) {
+//                image[i][j] = 1;
+//            }
+//        }
+//        for (int i = (int) center[3] - 5; i < center[3] + 5; i++) {
+//            for (int j = (int) center[2] - 5; j < center[2] + 5; j++) {
+//                image[i][j] = 1;
+//            }
+//        }
+//
+//        for (int i = rowMin; i < rowMax; i++) {
+//            image[i][colMax] = 1;
+//            image[i][colMin] = 1;
+//        }
+//
+//        for (int j = colMin; j < colMax; j++) {
+//            image[rowMin][j] = 1;
+//            image[rowMax][j] = 1;
+//        }
+//        saveImage(image, "slope");
+//
+//        System.out.print("Toa do trong tam " + center[0] + " " + center[1] + " " + center[2] + " " + center[3]);
         double tan = Y / X;
         return (float) Math.atan(tan);
     }
@@ -712,6 +774,12 @@ public class FeatureExtraction {
         crdnt[0] = (double) weiX / Weight;
         crdnt[1] = (double) weiY / Weight;
 
+//        for (int i = (int) crdnt[1] - 5; i < crdnt[1] + 5; i++) {
+//            for (int j = (int) crdnt[0] - 5; j < crdnt[0] + 5; j++) {
+//                image[i][j] = 1;
+//            }
+//        }
+//        saveImage(image, "center gravity");
         //Nhân với chuẩn hóa ảnh là 1000 x 1000
         crdnt[0] = crdnt[0] * standard / N;
         crdnt[1] = crdnt[1] * standard / M;
@@ -798,16 +866,17 @@ public class FeatureExtraction {
     }
 
     //Lay matran do sang cua anh
+    //Lay matran do sang cua anh
     public int[][] getImageMatrix(File file) {
         try {
             BufferedImage img = ImageIO.read(file);
             Raster raster = img.getData();
-            int wi = raster.getWidth();
-            int he = raster.getHeight();
-            int pixels[][] = new int[wi][he];
-            for (int x = 0; x < wi; x++) {
-                for (int y = 0; y < he; y++) {
-                    pixels[x][y] = raster.getSample(x, y, 0);
+            int numCol = raster.getWidth();
+            int numRow = raster.getHeight();
+            int pixels[][] = new int[numRow][numCol];
+            for (int x = 0; x < numRow; x++) {
+                for (int y = 0; y < numCol; y++) {
+                    pixels[x][y] = raster.getSample(y, x, 0);
                 }
             }
 
@@ -859,7 +928,7 @@ public class FeatureExtraction {
         chart.setVisible(true);
     }
 
-    public int[][] filter(int[][] I, String name) {
+    public int[][] Filter(int[][] I, String name) {
         int M = I.length;
         int N = I[0].length;
         if (name.equalsIgnoreCase("sobel")) {
@@ -870,7 +939,8 @@ public class FeatureExtraction {
                 for (int j = 1; j < N - 1; j++) {
                     soX[i][j] = I[i - 1][j - 1] - I[i - 1][j + 1] + 2 * I[i][j - 1] - 2 * I[i][j + 1] + I[i + 1][j - 1] - I[i + 1][j + 1];
                     soY[i][j] = I[i - 1][j - 1] + 2 * I[i - 1][j] + I[i - 1][j + 1] - I[i + 1][j - 1] - 2 * I[i + 1][j] - I[i + 1][j + 1];
-                    result[i][j] = soX[i][j] + +soY[i][j] > 0 ? 1 : 0;
+                    result[i][j] = soX[i][j] != 0 || soY[i][j] != 0 ? 1 : 0;
+                    //result[i][j] = soX[i][j] + soY[i][j] > 0 ? 1 : 0;
                 }
             }
             return result;
@@ -903,10 +973,10 @@ public class FeatureExtraction {
         int M = matrix.length;
         int N = matrix[0].length;
         try {
-            BufferedImage theImage = new BufferedImage(M, N, BufferedImage.TYPE_INT_RGB);
-            for (int y = 0; y < M; y++) {
-                for (int x = 0; x < N; x++) {
-                    int tmp = matrix[y][x] != 0 ? 255 : 0;
+            BufferedImage theImage = new BufferedImage(N, M, BufferedImage.TYPE_INT_RGB);
+            for (int x = 0; x < M; x++) {
+                for (int y = 0; y < N; y++) {
+                    int tmp = matrix[x][y] != 0 ? 255 : 0;
                     int value = tmp << 16 | tmp << 8 | tmp;
                     theImage.setRGB(y, x, value);
                 }
