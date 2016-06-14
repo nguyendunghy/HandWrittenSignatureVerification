@@ -132,8 +132,10 @@ public class ConnectionFunction {
             while (rs.next()) {
                 int id = rs.getInt(1);
                 String identityNumber = rs.getString(2);
-                double threshold = rs.getDouble(3);
-                ThresholdDatatype tt = new ThresholdDatatype(id, identityNumber, threshold);
+                double threshold1 = rs.getDouble(3);
+                double threshold2 = rs.getDouble(4);
+                double threshold3 = rs.getDouble(5);
+                ThresholdDatatype tt = new ThresholdDatatype(id, identityNumber, threshold1, threshold2, threshold3);
                 data.add(tt);
             }
             return data;
@@ -196,7 +198,7 @@ public class ConnectionFunction {
             ex.printStackTrace();
         }
 
-        return null;
+        return "";
     }
 
     /**
@@ -234,11 +236,13 @@ public class ConnectionFunction {
         ArrayList<ThresholdDatatype> re = getThresholdData(data.getIdentityNumber());
         if (re == null || re.size() == 0) {
             try {
-                String sql = "INSERT INTO handwritten_signature_verification.threshold VALUES(DEFAULT,?,?)";
+                String sql = "INSERT INTO handwritten_signature_verification.threshold VALUES(DEFAULT,?,?,?,?)";
                 prepare = con
                         .prepareStatement(sql);
                 prepare.setString(1, data.getIdentityNumber());
-                prepare.setDouble(2, data.getThreshold());
+                prepare.setDouble(2, data.getThreshold1());
+                prepare.setDouble(3, data.getThreshold2());
+                prepare.setDouble(4, data.getThreshold3());
                 prepare.executeUpdate();
 
             } catch (SQLException ex) {
@@ -247,8 +251,13 @@ public class ConnectionFunction {
             }
         } else {
             try {
-                String sql = "UPDATE handwritten_signature_verification.threshold SET threshold = "
-                        + String.valueOf(data.getThreshold())
+                String sql = "UPDATE handwritten_signature_verification.threshold SET "
+                        + " threshold1 = "
+                        + String.valueOf(data.getThreshold1())
+                        + " ,threshold2 = "
+                        + String.valueOf(data.getThreshold2())
+                        + " ,threshold3 = "
+                        + String.valueOf(data.getThreshold3())
                         + " WHERE identity_number = '"
                         + data.getIdentityNumber()
                         + "'";

@@ -332,25 +332,7 @@ public class ManualVerification extends javax.swing.JFrame {
     }//GEN-LAST:event_jButton3MouseClicked
 
     private void jButton5MouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_jButton5MouseClicked
-        String folderName = jTextField2.getText();
-        File folder = new File(folderName);
-        File[] files = folder.listFiles();
-        ConnectionFunction func = new ConnectionFunction();
-        func.getConnection();
-        String identity = jTextField1.getText();
-        ArrayList<double[]> re = func.getEnrollData(identity);
 
-        double[] dis = new double[files.length];
-        for (int i = 0; i < files.length; i++) {
-            dis[i] = getAverateRate(re, files[i].toString());
-        }
-
-        System.out.println("Distance to  mean vector : ");
-        for (int i = 0; i < files.length; i++) {
-            int tmp = (int) (10000 * dis[i]);
-            System.out.print((float) tmp / 10000 + " ");
-        }
-        System.out.println("");
     }//GEN-LAST:event_jButton5MouseClicked
 
     private void jButton5ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton5ActionPerformed
@@ -374,72 +356,6 @@ public class ManualVerification extends javax.swing.JFrame {
             jLabel11.setText("Signature number " + String.valueOf(index));
         }
     }//GEN-LAST:event_jButton2MouseClicked
-
-    public String verificationNotify(double rate, ArrayList<ThresholdDatatype> thres) {
-        System.out.println("Mean of rate between distance compared with mean vector and diviation: " + rate);
-        //Doc nguong trong co so du lieu su theo identity
-        if (thres != null && thres.size() != 0) {
-            double TT = thres.get(0).getThreshold();
-            //So sanh voi nguong va dua ra ket qua
-            if (rate < TT) {
-                //JOptionPane.showMessageDialog(null, "Xác thực thành công");
-                return "Y";
-            } else {
-                //JOptionPane.showMessageDialog(null, "Xác thực thất bại");
-                return "N";
-            }
-        } else {
-            JOptionPane.showMessageDialog(null, "Không có ngưỡng trong cơ sở dữ liệu");
-        }
-        return null;
-
-    }
-
-    public double getAverateRate(ArrayList<double[]> re, String link) {
-        if (re != null) {
-            int S = re.size();
-            if (S != 0) {
-                int L = re.get(0).length;
-                //Tinh vector trung binh
-                double[] mean = new double[L];
-                for (int i = 0; i < S; i++) {
-                    for (int j = 0; j < L; j++) {
-                        mean[j] += re.get(i)[j];
-                    }
-                }
-                for (int i = 0; i < L; i++) {
-                    mean[i] = mean[i] / S;
-                }
-                //Tinh vector do lech chuan
-                double[] diviation = new double[L];
-                for (int i = 0; i < S; i++) {
-                    for (int j = 0; j < L; j++) {
-                        diviation[j] += (mean[j] - re.get(i)[j]) * (mean[j] - re.get(i)[j]);
-                    }
-                }
-                for (int i = 0; i < L; i++) {
-                    diviation[i] = Math.sqrt(diviation[i] / S);
-                }
-
-                //Tinh vector dac trung
-                int[][] binImage = new Preprocessing(link).getBinaryImage();
-                double[] fetureVector = new FeatureExtraction().getFeatureVector(binImage);
-
-                //Tinh trung binh ti so khoang cach va do lech giua hai vector dac trung va trung binh
-                double rate = 0;
-                for (int i = 0; i < L; i++) {
-                    if (diviation[i] != 0) {
-                        double tmp = (fetureVector[i] - mean[i]) / diviation[i];
-                        rate += tmp * tmp;
-                    }
-                }
-                //Neu tim duoc thuat toan baseline slant angle thi doi thanh 8
-                rate = rate / (L - 1);
-                return rate;
-            }
-        }
-        return -1;
-    }
 
     /**
      * @param args the command line arguments

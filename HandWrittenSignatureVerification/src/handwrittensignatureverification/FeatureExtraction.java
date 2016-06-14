@@ -848,7 +848,7 @@ public class FeatureExtraction {
         return boundingbox;
     }
 
-    public int[] SelectionSort(int[] A) {
+    private int[] SelectionSort(int[] A) {
         int N = A.length;
         for (int i = 0; i < N; i++) {
             int min = i;

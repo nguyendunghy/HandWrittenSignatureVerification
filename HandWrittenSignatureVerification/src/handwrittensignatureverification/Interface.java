@@ -168,9 +168,9 @@ public class Interface extends javax.swing.JFrame {
         /* Create and display the form */
         java.awt.EventQueue.invokeLater(new Runnable() {
             public void run() {
-                Interface  in = 
-                new Interface();
-                
+                Interface in
+                        = new Interface();
+
                 in.setVisible(true);
             }
         });

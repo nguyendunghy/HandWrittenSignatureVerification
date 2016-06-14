@@ -147,7 +147,7 @@ public class Preprocessing {
             T1 = T2;
 
         }
-        System.out.println("Image threshold : " + T1);
+        //System.out.println("Image threshold : " + T1);
         return T1;
     }
 
